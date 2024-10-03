@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/2.15.6/js/jsplumb.min.js"></script>
+<style>
+    .futuristic-bg {
+        background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+        background-size: 400% 400%;
+        animation: gradient 15s ease infinite;
+    }
+
+    @keyframes gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .glass-effect {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .neon-border {
+        box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #fff, 0 0 20px #ff00de, 0 0 35px #ff00de, 0 0 40px #ff00de, 0 0 50px #ff00de, 0 0 75px #ff00de;
+    }
+
+    .workflow-step {
+        position: absolute;
+        width: 150px;
+        padding: 10px;
+        background-color: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 5px;
+        cursor: move;
+    }
+
+    #target-url {
+        background-color: rgba(59, 130, 246, 0.2);
+        border: 1px solid rgba(59, 130, 246, 0.4);
+        padding: 0.75rem;
+        border-radius: 0.375rem;
+        width: 200px;
+    }
+
+    #target-url h3 {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    #target-url p {
+        word-break: break-all;
+    }
+
+    .workflow-canvas {
+        min-height: 600px;
+        height: calc(100vh - 300px);
+        position: relative;
+        overflow: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="workflow-designer" class="futuristic-bg min-h-screen p-8">
+    <div class="glass-effect p-8 max-w-6xl mx-auto">
+        <h1 class="text-4xl font-bold mb-8 text-white text-center neon-border p-4 text-sharp">Create New Workflow for {{ project.name }}</h1>
+        <input type="text" v-model="workflowName" placeholder="Enter workflow name"
+               class="w-full mb-8 p-4 bg-secondary-bg text-text-primary border border-text-secondary rounded-lg focus:border-accent-color focus:ring focus:ring-accent-color focus:ring-opacity-50 text-sharp"
+               required>
+        <div class="flex flex-col lg:flex-row space-y-8 lg:space-y-0 lg:space-x-8">
+            <div class="w-full lg:w-1/3">
+                <div class="glass-effect p-6 mb-6">
+                    <h2 class="text-2xl font-semibold mb-4 text-white text-sharp">Tools</h2>
+                    <div class="tool-list grid grid-cols-1 gap-4">
+                        <div v-for="tool in tools" :key="tool.id"
+                             class="tool-item bg-white bg-opacity-10 p-4 rounded-lg shadow-lg cursor-move transition duration-300 hover:bg-opacity-20 text-sharp"
+                             :data-tool-id="tool.id" draggable="true" @dragstart="dragStart($event, tool)">
+                            <h3 class="text-lg font-medium text-white">[[ tool.name ]]</h3>
+                            <p class="text-sm text-gray-300">[[ tool.category ]]</p>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="hasLanguageBinaries" class="glass-effect p-6">
+                    <h2 class="text-2xl font-semibold mb-4 text-white text-sharp">Language Binaries</h2>
+                    <div class="language-binaries-list">
+                        <div v-for="(path, lang) in languageBinaries" :key="lang" v-if="path"
+                             class="language-binary-item bg-white bg-opacity-10 p-4 rounded-lg shadow-lg mb-4 text-sharp cursor-move"
+                             draggable="true" @dragstart="dragStart($event, {type: 'language', name: lang, path: path})">
+                            <h3 class="text-lg font-medium text-white">[[ lang ]]</h3>
+                            <p class="text-sm text-gray-300">[[ path ]]</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="w-full lg:w-2/3 glass-effect p-6">
+                <h2 class="text-2xl font-semibold mb-4 text-white text-sharp">Workflow Canvas</h2>
+                <div id="workflow-canvas" ref="workflowCanvas" class="workflow-canvas" @drop="handleDrop" @dragover.prevent>
+                    <div id="target-url" class="workflow-step" :style="{ left: '20px', top: '20px' }">
+                        <h3 class="text-lg font-medium text-white text-sharp">Target URL</h3>
+                        <p class="text-sm text-gray-300 text-sharp">{{ project.target_url }}</p>
+                    </div>
+                    <div v-for="step in workflowSteps" :key="step.id" :id="'step-' + step.id"
+                         class="workflow-step"
+                         :style="{ left: step.left + 'px', top: step.top + 'px' }"
+                         draggable="true"
+                         @dragstart="dragStart($event, step)"
+                         @dragend="dragEnd($event, step)">
+                        <h3 class="text-lg font-medium text-white text-sharp">[[ step.name ]]</h3>
+                        <p class="text-sm text-gray-300 text-sharp">[[ step.category || step.type ]]</p>
+                        <button @click="removeStep(step)" class="absolute top-0 right-0 text-red-500 hover:text-red-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-8 text-center">
+            <button @click="saveWorkflow"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-sharp">
+                Save Workflow
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    new Vue({
+        el: '#workflow-designer',
+        delimiters: ['[[', ']]'],
+        data: {
+            tools: {{ tools| tojson | safe }},
+            languageBinaries: {{ language_binaries| tojson | safe }},
+            workflowSteps: [],
+            workflowName: '',
+            jsPlumbInstance: null,
+            csrfToken: '{{ csrf_token() }}'
+        },
+        computed: {
+            hasLanguageBinaries() {
+                return Object.values(this.languageBinaries).some(path => path !== null);
+            }
+        },
+        mounted() {
+            this.initJsPlumb();
+            this.addTargetUrlEndpoint();
+        },
+        methods: {
+            initJsPlumb() {
+                this.jsPlumbInstance = jsPlumb.getInstance({
+                    Container: "workflow-canvas",
+                    Connector: ["Bezier", { curviness: 50 }],
+                    Endpoint: ["Dot", { radius: 5 }],
+                    HoverPaintStyle: { stroke: "#ff00de", strokeWidth: 2 },
+                    ConnectionOverlays: [
+                        ["Arrow", { location: 1, id: "arrow", length: 14, foldback: 0.8 }],
+                    ],
+                });
+
+                this.jsPlumbInstance.bind("ready", () => {
+                    this.jsPlumbInstance.draggable(document.querySelectorAll(".workflow-step"), { 
+                        grid: [10, 10],
+                        containment: true
+                    });
+                    this.jsPlumbInstance.bind("click", (conn, originalEvent) => {
+                        if (confirm("Delete this connection?")) {
+                            this.jsPlumbInstance.deleteConnection(conn);
+                        }
+                    });
+                });
+            },
+            addTargetUrlEndpoint() {
+                const targetUrl = document.getElementById('target-url');
+                this.jsPlumbInstance.addEndpoint(targetUrl, {
+                    anchor: "Bottom",
+                    isSource: true,
+                    maxConnections: -1
+                });
+            },
+            dragStart(event, item) {
+                event.dataTransfer.setData('application/json', JSON.stringify(item));
+            },
+            dragEnd(event, step) {
+                const canvas = this.$refs.workflowCanvas.getBoundingClientRect();
+                step.left = event.clientX - canvas.left + this.$refs.workflowCanvas.scrollLeft;
+                step.top = event.clientY - canvas.top + this.$refs.workflowCanvas.scrollTop;
+                this.jsPlumbInstance.repaintEverything();
+            },
+            handleDrop(event) {
+                event.preventDefault();
+                try {
+                    const data = JSON.parse(event.dataTransfer.getData('application/json'));
+                    const canvas = this.$refs.workflowCanvas.getBoundingClientRect();
+                    const left = event.clientX - canvas.left + this.$refs.workflowCanvas.scrollLeft;
+                    const top = event.clientY - canvas.top + this.$refs.workflowCanvas.scrollTop;
+
+                    let newStep;
+                    if (data.id) {
+                        // This is a tool
+                        newStep = {
+                            id: Date.now(),
+                            tool_id: data.id,
+                            name: data.name,
+                            category: data.category,
+                            left: left,
+                            top: top
+                        };
+                    } else if (data.type === 'language') {
+                        // This is a language binary
+                        newStep = {
+                            id: Date.now(),
+                            type: 'language',
+                            name: data.name,
+                            path: data.path,
+                            left: left,
+                            top: top
+                        };
+                    } else {
+                        // This is an existing workflow step being moved
+                        const step = this.workflowSteps.find(s => s.id == data.id);
+                        if (step) {
+                            step.left = left;
+                            step.top = top;
+                            this.jsPlumbInstance.repaintEverything();
+                            return;
+                        }
+                    }
+
+                    if (newStep) {
+                        this.workflowSteps.push(newStep);
+                        this.$nextTick(() => {
+                            this.makeElementDraggable(newStep.id);
+                            this.addEndpoints(newStep.id);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error handling drop:', error);
+                    alert('An error occurred while handling the drop. Please try again.');
+                }
+            },
+            removeStep(step) {
+                const index = this.workflowSteps.findIndex(s => s.id === step.id);
+                if (index !== -1) {
+                    this.workflowSteps.splice(index, 1);
+                    this.$nextTick(() => {
+                        this.jsPlumbInstance.remove(`step-${step.id}`);
+                    });
+                }
+            },
+            makeElementDraggable(id) {
+                this.jsPlumbInstance.draggable(`step-${id}`, {
+                    containment: true,
+                    grid: [10, 10],
+                    stop: (event) => {
+                        const step = this.workflowSteps.find(s => s.id == id);
+                        if (step) {
+                            step.left = parseInt(event.pos[0], 10);
+                            step.top = parseInt(event.pos[1], 10);
+                        }
+                    }
+                });
+            },
+            addEndpoints(id) {
+                const element = document.getElementById(`step-${id}`);
+                this.jsPlumbInstance.addEndpoint(element, {
+                    anchor: "Top",
+                    isTarget: true,
+                    maxConnections: -1,
+                    connectorStyle: { stroke: "#5c6bc0", strokeWidth: 2 },
+                    connectionType: "basic"
+                });
+                this.jsPlumbInstance.addEndpoint(element, {
+                    anchor: "Bottom",
+                    isSource: true,
+                    maxConnections: -1,
+                    connectorStyle: { stroke: "#5c6bc0", strokeWidth: 2 },
+                    connectionType: "basic"
+                });
+            },
+            saveWorkflow() {
+                if (!this.workflowName.trim()) {
+                    alert('Please enter a workflow name.');
+                    return;
+                }
+
+                if (this.workflowSteps.length === 0) {
+                    alert('Please add at least one step to the workflow.');
+                    return;
+                }
+
+                const workflowData = {
+                    name: this.workflowName,
+                    steps: this.workflowSteps.map((step, index) => ({
+                        tool_id: step.tool_id,
+                        type: step.type || 'tool',
+                        name: step.name,
+                        path: step.path,
+                        order: index,
+                        left: step.left,
+                        top: step.top
+                    })),
+                    csrf_token: this.csrfToken
+                };
+
+                fetch('{{ url_for("workflows.create_workflow", project_id=project.id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.csrfToken
+                    },
+                    body: JSON.stringify(workflowData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(text);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Workflow saved successfully');
+                        window.location.href = '{{ url_for("workflows.list_workflows", project_id=project.id) }}';
+                    } else {
+                        throw new Error(data.message || 'Error saving workflow');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error saving workflow: ' + error.message);
+                });
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+    .futuristic-bg {
+        background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+        background-size: 400% 400%;
+        animation: gradient 15s ease infinite;
+    }
+    @keyframes gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    .glass-effect {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .neon-border {
+        box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #fff, 0 0 20px #ff00de, 0 0 35px #ff00de, 0 0 40px #ff00de, 0 0 50px #ff00de, 0 0 75px #ff00de;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="futuristic-bg min-h-screen p-8">
+    <div class="glass-effect p-8 max-w-3xl mx-auto">
+        <h1 class="text-4xl font-bold mb-8 text-white text-center neon-border p-4">{{ tool.name }}</h1>
+        <div class="space-y-6">
+            <div class="bg-white bg-opacity-10 p-6 rounded-lg">
+                <h2 class="text-2xl font-semibold mb-2 text-white">Category</h2>
+                <p class="text-gray-300">{{ tool.category }}</p>
+            </div>
+            <div class="bg-white bg-opacity-10 p-6 rounded-lg">
+                <h2 class="text-2xl font-semibold mb-2 text-white">Command</h2>
+                <pre class="text-gray-300 whitespace-pre-wrap">{{ tool.command }}</pre>
+            </div>
+            <div class="bg-white bg-opacity-10 p-6 rounded-lg">
+                <h2 class="text-2xl font-semibold mb-2 text-white">Description</h2>
+                <p class="text-gray-300">{{ tool.description }}</p>
+            </div>
+        </div>
+        <div class="mt-8 flex justify-center space-x-4">
+            {% if tool.user_id == current_user.id %}
+            <a href="{{ url_for('tools.edit_tool', tool_id=tool.id) }}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-full transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50">Edit Tool</a>
+            {% endif %}
+            <a href="{{ url_for('tools.list_tools') }}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Back to Tools</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

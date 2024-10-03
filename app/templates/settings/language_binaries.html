@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Language Binaries{% endblock %}
+
+{% block extra_head %}
+<style>
+    .input-group {
+        display: flex;
+        align-items: stretch;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 0.5rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    .input-group:hover {
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    }
+    .input-group input {
+        flex-grow: 1;
+        background-color: transparent;
+        border: none;
+        padding: 0.75rem 1rem;
+        color: white;
+        font-size: 1rem;
+    }
+    .input-group input:focus {
+        outline: none;
+    }
+    .input-group button {
+        background-color: rgba(59, 130, 246, 0.2);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    .input-group button:hover {
+        background-color: rgba(59, 130, 246, 0.4);
+    }
+    .save-button {
+        background: linear-gradient(45deg, #3b82f6, #60a5fa);
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 0.5rem;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .save-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-4xl font-bold mb-12 text-center neon-text">Language Binaries</h1>
+    <div class="max-w-3xl mx-auto glass-effect p-8 rounded-lg">
+        <form method="POST" action="{{ url_for('settings.language_binaries') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="space-y-8">
+                <div>
+                    <label for="python_path" class="block text-white text-lg mb-2">Python Path</label>
+                    <div class="input-group">
+                        <input type="text" id="python_path" name="python_path" value="{{ language_binary.python_path or '' }}" placeholder="/usr/bin/python3">
+                        <button type="button" onclick="browseBinary('python')">Browse</button>
+                    </div>
+                </div>
+                <div>
+                    <label for="node_path" class="block text-white text-lg mb-2">Node.js Path</label>
+                    <div class="input-group">
+                        <input type="text" id="node_path" name="node_path" value="{{ language_binary.node_path or '' }}" placeholder="/usr/bin/node">
+                        <button type="button" onclick="browseBinary('node')">Browse</button>
+                    </div>
+                </div>
+                <div>
+                    <label for="ruby_path" class="block text-white text-lg mb-2">Ruby Path</label>
+                    <div class="input-group">
+                        <input type="text" id="ruby_path" name="ruby_path" value="{{ language_binary.ruby_path or '' }}" placeholder="/usr/bin/ruby">
+                        <button type="button" onclick="browseBinary('ruby')">Browse</button>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-12">
+                <button type="submit" class="save-button">Save Language Binaries</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function browseBinary(language) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.exe,.sh,.bat';
+    input.onchange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            fetch('{{ url_for("settings.browse_binary") }}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById(`${language}_path`).value = data.path;
+                } else {
+                    alert('Error uploading file: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while uploading the file.');
+            });
+        }
+    };
+    input.click();
+}
+</script>
+{% endblock %}

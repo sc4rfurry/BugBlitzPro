@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BugBlitzPro{% endblock %}</title>
+    
+    <!-- Add the favicon link here -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='media/favicon/favicon.ico') }}">
+    
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="h-full">
+    <div id="app" class="flex flex-col min-h-screen">
+        <nav class="navbar">
+            <div class="navbar-container responsive-container">
+                <a href="{{ url_for('main.index') }}" class="logo-container">
+                    <img data-src="{{ url_for('static', filename='media/BugBlitzPro.png') }}" alt="BugBlitzPro Logo" class="logo-image lazyload">
+                    <span class="logo-text">BugBlitzPro</span>
+                </a>
+                <div class="nav-links">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('projects.list_projects') }}">Projects</a>
+                        <a href="{{ url_for('tools.list_tools') }}">Tools</a>
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-primary">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-secondary">Login</a>
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register</a>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+
+        <main class="flex-grow container mx-auto px-4 py-8">
+            <div id="flash-messages">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="flash-message glass-effect p-4 mb-4 rounded-lg {{ 'bg-success-color' if category == 'success' else 'bg-error-color' if category == 'error' else 'bg-warning-color' }} relative">
+                                {{ message }}
+                                <button class="absolute top-2 right-2 text-white hover:text-gray-200" onclick="this.parentElement.remove()">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="glass-effect p-4 mt-8">
+            <div class="container mx-auto text-center">
+                <p>&copy; 2024 BugBlitzPro. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+
+    {% block extra_js %}{% endblock %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(message => {
+                const randomTime = Math.floor(Math.random() * (5000 - 3000 + 1)) + 3000; // Random time between 3 and 5 seconds
+                const timer = setTimeout(() => {
+                    hideMessage(message);
+                }, randomTime);
+
+                // Cancel the timer if the close button is clicked
+                const closeButton = message.querySelector('button');
+                closeButton.addEventListener('click', () => {
+                    clearTimeout(timer);
+                });
+            });
+        });
+
+        function hideMessage(message) {
+            message.style.opacity = '0';
+            message.style.transform = 'translateY(-20px)';
+            setTimeout(() => {
+                message.remove();
+            }, 300);
+        }
+    </script>
+
+    <!-- Add lazysizes script -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lazysizes/5.3.2/lazysizes.min.js" async></script>
+</body>
+
+</html>

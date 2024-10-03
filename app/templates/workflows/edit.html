@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/2.15.6/js/jsplumb.min.js"></script>
+<style>
+    .workflow-canvas {
+        position: relative;
+        min-height: 600px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .workflow-step {
+        position: absolute;
+        width: 150px;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        cursor: move;
+    }
+    .delete-zone {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 200px;
+        height: 60px;
+        border: 2px dashed #ff6b6b;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #ff6b6b;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    .delete-zone.highlight {
+        background-color: rgba(255, 107, 107, 0.2);
+        transform: translateX(-50%) scale(1.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="workflow-designer" class="container mx-auto px-4 py-8">
+    <h1 class="text-4xl font-bold mb-8 text-center text-white">Edit Workflow: [[ workflowName ]]</h1>
+    <div class="mb-8">
+        <input type="text" v-model="workflowName" placeholder="Enter workflow name" class="w-full p-2 bg-opacity-10 bg-white text-white border border-white border-opacity-20 rounded">
+    </div>
+    <div class="flex flex-wrap -mx-4">
+        <div class="w-full lg:w-1/3 px-4 mb-8">
+            <div class="bg-white bg-opacity-10 p-4 rounded-lg">
+                <h2 class="text-2xl font-semibold mb-4 text-white">Tools</h2>
+                <div class="space-y-4">
+                    <div v-for="tool in tools" :key="tool.id" 
+                         class="tool-item p-2 bg-white bg-opacity-5 rounded cursor-move"
+                         draggable="true" @dragstart="dragStart($event, tool)">
+                        <h3 class="text-lg font-medium text-white">[[ tool.name ]]</h3>
+                        <p class="text-sm text-gray-300">[[ tool.category ]]</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="w-full lg:w-2/3 px-4">
+            <div class="workflow-canvas bg-white bg-opacity-5 p-4 rounded-lg" @drop="handleDrop" @dragover.prevent>
+                <div id="target-url" class="workflow-step" style="top: 20px; left: 20px;">
+                    <h3 class="text-lg font-medium text-white">Target URL</h3>
+                    <p class="text-sm text-gray-300">{{ workflow.project.target_url }}</p>
+                </div>
+                <div v-for="step in workflowSteps" :key="step.id" :id="'step-' + step.id"
+                     class="workflow-step"
+                     :style="{ left: step.left + 'px', top: step.top + 'px' }"
+                     draggable="true"
+                     @dragstart="dragStart($event, step)">
+                    <h3 class="text-lg font-medium text-white">[[ step.name ]]</h3>
+                    <p class="text-sm text-gray-300">[[ step.category ]]</p>
+                </div>
+                <div id="delete-zone" class="delete-zone" 
+                     @dragenter="highlightDeleteZone" 
+                     @dragleave="unhighlightDeleteZone" 
+                     @dragover.prevent 
+                     @drop="handleDelete">
+                    Drop here to delete
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mt-8 text-center">
+        <button @click="saveWorkflow" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+            Update Workflow
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    new Vue({
+        el: '#workflow-designer',
+        delimiters: ['[[', ']]'],
+        data: {
+            tools: {{ tools|tojson|safe }},
+            workflowSteps: {{ existing_steps|tojson|safe }},
+            workflowName: '{{ workflow.name }}',
+            jsPlumbInstance: null,
+            csrfToken: '{{ csrf_token() }}',
+        },
+        mounted() {
+            this.initJsPlumb();
+            this.loadExistingSteps();
+        },
+        methods: {
+            initJsPlumb() {
+                this.jsPlumbInstance = jsPlumb.getInstance();
+                this.jsPlumbInstance.setContainer(document.querySelector('.workflow-canvas'));
+                this.jsPlumbInstance.bind('ready', () => {
+                    this.makeElementsDraggable();
+                    this.connectWorkflowSteps();
+                });
+            },
+            makeElementsDraggable() {
+                this.jsPlumbInstance.draggable(document.querySelectorAll('.workflow-step'), {
+                    containment: true,
+                    grid: [10, 10],
+                    stop: (event) => {
+                        const stepId = event.el.id.split('-')[1];
+                        const step = this.workflowSteps.find(s => s.id == stepId);
+                        if (step) {
+                            step.left = parseInt(event.el.style.left, 10);
+                            step.top = parseInt(event.el.style.top, 10);
+                        }
+                        this.connectWorkflowSteps();
+                    }
+                });
+            },
+            connectWorkflowSteps() {
+                this.jsPlumbInstance.deleteEveryConnection();
+                this.workflowSteps.forEach((step, index) => {
+                    if (index === 0) {
+                        this.jsPlumbInstance.connect({
+                            source: 'target-url',
+                            target: 'step-' + step.id,
+                            anchor: ['Bottom', 'Top'],
+                            endpoint: 'Dot',
+                            connector: ['Bezier', { curviness: 50 }],
+                            paintStyle: { stroke: '#7c3aed', strokeWidth: 2 },
+                            overlays: [['Arrow', { location: 1, width: 10, length: 10 }]]
+                        });
+                    } else {
+                        this.jsPlumbInstance.connect({
+                            source: 'step-' + this.workflowSteps[index - 1].id,
+                            target: 'step-' + step.id,
+                            anchor: ['Bottom', 'Top'],
+                            endpoint: 'Dot',
+                            connector: ['Bezier', { curviness: 50 }],
+                            paintStyle: { stroke: '#7c3aed', strokeWidth: 2 },
+                            overlays: [['Arrow', { location: 1, width: 10, length: 10 }]]
+                        });
+                    }
+                });
+            },
+            dragStart(event, step) {
+                event.dataTransfer.setData('text/plain', JSON.stringify({id: step.id}));
+            },
+            handleDrop(event) {
+                const data = JSON.parse(event.dataTransfer.getData('text/plain'));
+                const canvas = event.target.getBoundingClientRect();
+                const newStep = {
+                    id: 'new-' + Date.now(),  // Prefix new IDs with 'new-'
+                    tool_id: data.id,  // Changed from toolId to tool_id
+                    name: data.name,
+                    category: data.category,
+                    left: event.clientX - canvas.left,
+                    top: event.clientY - canvas.top
+                };
+                this.workflowSteps.push(newStep);
+                this.$nextTick(() => {
+                    this.makeElementsDraggable();
+                    this.connectWorkflowSteps();
+                });
+            },
+            highlightDeleteZone(event) {
+                event.target.classList.add('highlight');
+            },
+            unhighlightDeleteZone(event) {
+                event.target.classList.remove('highlight');
+            },
+            handleDelete(event) {
+                event.preventDefault();
+                const data = JSON.parse(event.dataTransfer.getData('text/plain'));
+                const index = this.workflowSteps.findIndex(step => step.id == data.id);
+                if (index !== -1) {
+                    this.workflowSteps.splice(index, 1);
+                    this.$nextTick(() => {
+                        this.connectWorkflowSteps();
+                    });
+                }
+                this.unhighlightDeleteZone(event);
+            },
+            loadExistingSteps() {
+                this.workflowSteps = {{ existing_steps|tojson|safe }};
+                this.$nextTick(() => {
+                    this.makeElementsDraggable();
+                    this.connectWorkflowSteps();
+                });
+            },
+            saveWorkflow() {
+                const workflowData = {
+                    name: this.workflowName,
+                    steps: this.workflowSteps.map((step, index) => ({
+                        id: step.id,
+                        tool_id: step.tool_id,  // Changed from toolId to tool_id
+                        order: index,
+                        left: step.left,
+                        top: step.top
+                    })),
+                    csrf_token: this.csrfToken
+                };
+                fetch('{{ url_for("workflows.edit_workflow", workflow_id=workflow.id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.csrfToken
+                    },
+                    body: JSON.stringify(workflowData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Workflow saved successfully');
+                        // Optionally, update the workflowSteps with the returned data
+                        this.workflowSteps = data.steps.map(step => ({
+                            id: step.id,
+                            tool_id: step.tool_id,
+                            name: step.name,
+                            category: step.category,
+                            left: step.left,
+                            top: step.top
+                        }));
+                        this.$nextTick(() => {
+                            this.makeElementsDraggable();
+                            this.connectWorkflowSteps();
+                        });
+                    } else {
+                        throw new Error(data.message || 'Failed to save workflow');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving workflow:', error);
+                    alert('Failed to save workflow: ' + error.message);
+                });
+            }
+        }
+    });
+</script>
+{% endblock %}

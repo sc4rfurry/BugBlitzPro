@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h2 class="auth-title">Sign in to your account</h2>
+    <form class="auth-form" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-input">
+            <input id="username" name="username" type="text" required placeholder="Username">
+            <i class="fas fa-user"></i>
+        </div>
+        <div class="form-input">
+            <input id="password" name="password" type="password" required placeholder="Password">
+            <i class="fas fa-lock"></i>
+        </div>
+        <button type="submit" class="btn btn-primary">Sign in</button>
+    </form>
+    <div class="auth-links">
+        <p>Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a></p>
+    </div>
+</div>
+{% endblock %}

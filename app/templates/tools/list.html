@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Tools{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 class="text-3xl font-bold mb-6 neon-text">Tools</h1>
+    <a href="{{ url_for('tools.create_tool') }}" class="btn btn-primary mb-6 inline-block">
+        Create New Tool
+    </a>
+    {% if tools %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+        {% for tool in tools %}
+            <div class="glass-effect p-6 rounded-lg">
+                <h2 class="text-xl font-semibold mb-2">{{ tool.name }}</h2>
+                <p class="text-gray-300 mb-2">Category: {{ tool.category }}</p>
+                <div class="space-x-2">
+                    <a href="{{ url_for('tools.view_tool', tool_id=tool.id) }}" class="btn">View</a>
+                    {% if tool.user_id == current_user.id %}
+                    <a href="{{ url_for('tools.edit_tool', tool_id=tool.id) }}" class="btn btn-primary">Edit</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-gray-300 mt-4">No tools available.</p>
+    {% endif %}
+</div>
+{% endblock %}

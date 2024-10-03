@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to BugBlitzPro{% endblock %}
+
+{% block content %}
+<div class="responsive-container">
+    <div class="text-center mb-12">
+        <img data-src="{{ url_for('static', filename='media/BugBlitzPro.png') }}" alt="BugBlitzPro Logo" class="index-logo lazyload">
+        <h1 class="index-title">Welcome to BugBlitzPro</h1>
+        <p class="index-subtitle">A powerful Bug Bounty Workflow Management System</p>
+    </div>
+    
+    {% if current_user.is_authenticated %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Projects Card -->
+        <div class="glass-effect p-6 rounded-lg">
+            <h2 class="text-2xl font-semibold mb-4 text-white">Projects</h2>
+            <p class="text-gray-300 mb-4">Manage your bug bounty projects efficiently.</p>
+            <a href="{{ url_for('projects.list_projects') }}" class="btn btn-primary">View Projects</a>
+        </div>
+
+        <!-- Tools Card -->
+        <div class="glass-effect p-6 rounded-lg">
+            <h2 class="text-2xl font-semibold mb-4 text-white">Tools</h2>
+            <p class="text-gray-300 mb-4">Access and configure your security tools.</p>
+            <a href="{{ url_for('tools.list_tools') }}" class="btn btn-primary">Manage Tools</a>
+        </div>
+
+        <!-- Workflows Card -->
+        <div class="glass-effect p-6 rounded-lg">
+            <h2 class="text-2xl font-semibold mb-4 text-white">Workflows</h2>
+            <p class="text-gray-300 mb-4">Design and execute custom workflows.</p>
+            <a href="#" class="btn btn-primary">Explore Workflows</a>
+        </div>
+
+        <!-- Language Binaries Card -->
+        <div class="glass-effect p-6 rounded-lg">
+            <h2 class="text-2xl font-semibold mb-4 text-white">Language Binaries</h2>
+            <p class="text-gray-300 mb-4">Configure programming language binaries.</p>
+            <a href="{{ url_for('settings.language_binaries') }}" class="btn btn-primary">Set Binaries</a>
+        </div>
+
+        <!-- Reports Card -->
+        <div class="glass-effect p-6 rounded-lg">
+            <h2 class="text-2xl font-semibold mb-4 text-white">Reports</h2>
+            <p class="text-gray-300 mb-4">View and generate security reports.</p>
+            <a href="#" class="btn btn-primary">Generate Reports</a>
+        </div>
+
+        <!-- Settings Card -->
+        <div class="glass-effect p-6 rounded-lg">
+            <h2 class="text-2xl font-semibold mb-4 text-white">Settings</h2>
+            <p class="text-gray-300 mb-4">Customize your BugBlitzPro experience.</p>
+            <a href="{{ url_for('settings.index') }}" class="btn btn-primary">Manage Settings</a>
+        </div>
+    </div>
+    {% else %}
+    <div class="glass-effect p-8 rounded-lg max-w-3xl mx-auto">
+        <h2 class="text-3xl font-semibold mb-6 text-white">About BugBlitzPro</h2>
+        <p class="text-gray-300 mb-6">BugBlitzPro is a powerful Bug Bounty Workflow Management System designed to streamline your security testing process. With features like custom tool integration, workflow automation, and result visualization, BugBlitzPro helps you manage your bug bounty projects more efficiently.</p>
+        <h3 class="text-2xl font-semibold mb-4 text-white">Key Features:</h3>
+        <ul class="list-disc list-inside text-gray-300 mb-6">
+            <li>Project Management</li>
+            <li>Custom Tool Integration</li>
+            <li>Workflow Automation</li>
+            <li>Result Visualization</li>
+            <li>User Authentication</li>
+            <li>Cross-Platform Compatibility</li>
+        </ul>
+        <div class="flex justify-center space-x-4">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login</a>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-secondary">Register</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // You can add page-specific Vue code here if needed
+</script>
+{% endblock %}

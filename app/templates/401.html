@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block header %}Unauthorized{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+    <h1 class="text-2xl font-bold mb-4">401 - Unauthorized</h1>
+    <p class="mb-4">You are not authorized to access this page.</p>
+    <a href="{{ url_for('main.index') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Back to Home</a>
+</div>
+{% endblock %}

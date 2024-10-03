@@ -1,0 +1,12 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-Bcrypt
+celery
+redis
+python-dotenv
+pytest
+gevent
+click
+Flask-Migrate
+Flask-WTF

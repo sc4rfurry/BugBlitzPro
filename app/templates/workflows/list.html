@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Workflows for {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="glass-effect p-8 rounded-lg">
+    <h1 class="text-3xl font-bold mb-6 neon-text">Workflows for {{ project.name }}</h1>
+    <a href="{{ url_for('workflows.create_workflow', project_id=project.id) }}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 mb-6 inline-block">
+        Create New Workflow
+    </a>
+    {% if workflows %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+        {% for workflow in workflows %}
+            <div class="glass-effect p-6 rounded-lg">
+                <h2 class="text-xl font-semibold mb-2">{{ workflow.name }}</h2>
+                <p class="text-gray-300 mb-2">Status: {{ workflow.status }}</p>
+                <div class="space-x-2">
+                    <!-- <a href="{{ url_for('workflows.edit_workflow', workflow_id=workflow.id) }}" class="btn">Edit</a> -->
+                    <form action="{{ url_for('workflows.delete_workflow', workflow_id=workflow.id) }}" method="POST" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this workflow?')">Delete</button>
+                    </form>
+                    <a href="{{ url_for('workflows.execute_workflow_route', workflow_id=workflow.id) }}" class="btn btn-primary">Execute</a>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-gray-300 mt-4">No workflows available for this project.</p>
+    {% endif %}
+</div>
+{% endblock %}

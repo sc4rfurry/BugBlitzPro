@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Your Projects{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 class="text-3xl font-bold mb-6 neon-text">Your Projects</h1>
+    <a href="{{ url_for('projects.create_project') }}" class="btn btn-primary mb-6 inline-block">
+        Create New Project
+    </a>
+    {% if projects %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+        {% for project in projects %}
+            <div class="glass-effect p-6 rounded-lg">
+                <h2 class="text-xl font-semibold mb-2">{{ project.name }}</h2>
+                <p class="text-gray-300 mb-4">Target URL: {{ project.target_url }}</p>
+                <a href="{{ url_for('projects.view_project', project_id=project.id) }}" class="btn btn-primary">View Project</a>
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-gray-300 mt-4">You don't have any projects yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

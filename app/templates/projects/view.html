@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block header %}{{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="px-4 py-5 sm:px-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">Project Details</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500">Details and workflows for this project.</p>
+    </div>
+    <div class="border-t border-gray-200">
+        <dl>
+            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Target URL</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ project.target_url }}</dd>
+            </div>
+            <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Created at</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ project.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
+            </div>
+        </dl>
+    </div>
+</div>
+
+<div class="mt-8">
+    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Workflows</h3>
+    {% if project.workflows %}
+        <div class="bg-white shadow overflow-hidden sm:rounded-md">
+            <ul class="divide-y divide-gray-200">
+            {% for workflow in project.workflows %}
+                <li>
+                    <div class="px-4 py-4 sm:px-6">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-medium text-indigo-600 truncate">{{ workflow.name }}</h4>
+                            <div class="ml-2 flex-shrink-0 flex">
+                                <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    {{ workflow.status }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-2 flex justify-between">
+                            <div class="sm:flex">
+                                <div class="mr-6 flex items-center text-sm text-gray-500">
+                                    <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                                    </svg>
+                                    Created {{ workflow.created_at.strftime('%Y-%m-%d') }}
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <!-- <a href="{{ url_for('workflows.edit_workflow', workflow_id=workflow.id) }}" class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    Edit
+                                </a> -->
+                                <a href="{{ url_for('workflows.execute_workflow_route', workflow_id=workflow.id) }}" class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    Execute
+                                </a>
+                                <form action="{{ url_for('workflows.delete_workflow', workflow_id=workflow.id) }}" method="POST" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" onclick="return confirm('Are you sure you want to delete this workflow?')">
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            {% endfor %}
+            </ul>
+        </div>
+    {% else %}
+        <p class="text-gray-500">No workflows for this project yet.</p>
+    {% endif %}
+
+    <div class="mt-6">
+        <a href="{{ url_for('workflows.create_workflow', project_id=project.id) }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            Create New Workflow
+        </a>
+        <a href="{{ url_for('projects.list_projects') }}" class="ml-3 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            Back to Projects
+        </a>
+        <a href="{{ url_for('workflows.list_workflows', project_id=project.id) }}" class="ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            View All Workflows
+        </a>
+    </div>
+</div>
+{% endblock %}

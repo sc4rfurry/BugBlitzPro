@@ -1,0 +1,21 @@
+{
+    "name": "bugblitzpro",
+    "version": "1.0.0",
+    "description": "A powerful Bug Bounty Workflow Management System",
+    "main": "index.js",
+    "scripts": {
+        "build-css": "tailwindcss -i app/static/css/main.css -o app/static/css/output.css"
+    },
+    "keywords": [
+        "bug bounty",
+        "workflow",
+        "security"
+    ],
+    "author": "sc4rfurry",
+    "license": "MIT",
+    "devDependencies": {
+        "autoprefixer": "^10.4.0",
+        "postcss": "^8.4.5",
+        "tailwindcss": "^3.0.7"
+    }
+}
